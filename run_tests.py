@@ -581,12 +581,20 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
     if restrict_to_program:
         prog_names = filter(lambda x: x in restrict_to_program, prog_names)
 
+    # Run tests for each program defined in the programs dict
     for prog_name in prog_names:
-        d = programs[prog_name]
+        program_config = programs[prog_name]
 
-        url = d.get("url", "")
-        commands = d.get("commands", [])
-        setup = d.get("setup", None)
+        url = str(program_config.get("url", ""))
+        commands = program_config.get("commands", None)
+        setup = program_config.get("setup", None)
+
+        # Skip if no commands are defined
+        if commands is None:
+            print(f"-- skip {prog_name} (no commands)")
+            continue
+
+        # Run setup commands (if defined)
         if setup != None:
             print("--", " ".join(setup))
             try:
@@ -595,9 +603,11 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                 print("-- skip", e)
                 continue
 
-        for root, dirs, files in os.walk(TEST_CASES_DIR_PATH):
+        # Search for JSON files in the test cases directory and run the program against each one
+        for root, _, files in os.walk(TEST_CASES_DIR_PATH):
             json_files = (f for f in files if f.endswith(".json"))
             for filename in json_files:
+                # TODO: Analyze how this works
                 if restrict_to_path:
                     restrict_to_filename = os.path.basename(restrict_to_path)
                     if filename != restrict_to_filename:
@@ -605,21 +615,19 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
 
                 file_path = os.path.join(root, filename)
 
-                my_stdin = FNULL
-
-                use_stdin = "use_stdin" in d and d["use_stdin"]
+                use_stdin = "use_stdin" in program_config and program_config["use_stdin"]
                 if use_stdin:
                     my_stdin = open(file_path, "rb")
-                    a = commands
+                    process_args = commands
                 else:
-                    a = commands + [file_path]
+                    my_stdin = FNULL
+                    process_args = commands + [file_path]
 
-                # print("->", a)
-                print("--", " ".join(a))
+                print("--", " ".join(process_args))
 
                 try:
                     status = subprocess.call(
-                        a,
+                        process_args,
                         stdin=my_stdin,
                         stdout=FNULL,
                         stderr=subprocess.STDOUT,
@@ -628,8 +636,8 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                     # print("-->", status)
                 except subprocess.TimeoutExpired:
                     print("timeout expired")
-                    s = "%s\tTIMEOUT\t%s" % (prog_name, filename)
-                    log_file.write("%s\n" % s)
+                    status_log_entry = "%s\tTIMEOUT\t%s" % (prog_name, filename)
+                    log_file.write("%s\n" % status_log_entry)
                     print("RESULT:", result)
                     continue
                 except FileNotFoundError as e:
@@ -652,21 +660,21 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                 else:
                     result = "CRASH"
 
-                s = None
+                status_log_entry = None
                 if result == "CRASH":
-                    s = "%s\tCRASH\t%s" % (prog_name, filename)
+                    status_log_entry = "%s\tCRASH\t%s" % (prog_name, filename)
                 elif filename.startswith("y_") and result != "PASS":
-                    s = "%s\tSHOULD_HAVE_PASSED\t%s" % (prog_name, filename)
+                    status_log_entry = "%s\tSHOULD_HAVE_PASSED\t%s" % (prog_name, filename)
                 elif filename.startswith("n_") and result == "PASS":
-                    s = "%s\tSHOULD_HAVE_FAILED\t%s" % (prog_name, filename)
+                    status_log_entry = "%s\tSHOULD_HAVE_FAILED\t%s" % (prog_name, filename)
                 elif filename.startswith("i_") and result == "PASS":
-                    s = "%s\tIMPLEMENTATION_PASS\t%s" % (prog_name, filename)
+                    status_log_entry = "%s\tIMPLEMENTATION_PASS\t%s" % (prog_name, filename)
                 elif filename.startswith("i_") and result != "PASS":
-                    s = "%s\tIMPLEMENTATION_FAIL\t%s" % (prog_name, filename)
+                    status_log_entry = "%s\tIMPLEMENTATION_FAIL\t%s" % (prog_name, filename)
 
-                if s != None:
-                    print(s)
-                    log_file.write("%s\n" % s)
+                if status_log_entry != None:
+                    print(status_log_entry)
+                    log_file.write("%s\n" % status_log_entry)
 
     FNULL.close()
     log_file.close()
