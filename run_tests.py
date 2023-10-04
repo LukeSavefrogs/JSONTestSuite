@@ -13,6 +13,7 @@ from time import strftime
 
 from JSONTestSuite import constants
 from JSONTestSuite.programs import programs
+from JSONTestSuite.results import TestResults
 
 def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
     """ Run all tests.
@@ -88,8 +89,8 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                     # print("-->", status)
                 except subprocess.TimeoutExpired:
                     print("timeout expired")
-                    status_log_entry = "%s\tTIMEOUT\t%s" % (prog_name, filename)
-                    log_file.write("%s\n" % status_log_entry)
+                    status_log_entry = f"{prog_name}\t{TestResults.TIMEOUT.name}\t{filename}"
+                    log_file.write(f"{status_log_entry}\n")
                     print("RESULT:", result)
                     continue
                 except FileNotFoundError as e:
@@ -114,19 +115,19 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
 
                 status_log_entry = None
                 if result == "CRASH":
-                    status_log_entry = "%s\tCRASH\t%s" % (prog_name, filename)
+                    status_log_entry = f"{prog_name}\t{TestResults.CRASH.name}\t{filename}"
                 elif filename.startswith("y_") and result != "PASS":
-                    status_log_entry = "%s\tSHOULD_HAVE_PASSED\t%s" % (prog_name, filename)
+                    status_log_entry = f"{prog_name}\t{TestResults.SHOULD_HAVE_PASSED.name}\t{filename}"
                 elif filename.startswith("n_") and result == "PASS":
-                    status_log_entry = "%s\tSHOULD_HAVE_FAILED\t%s" % (prog_name, filename)
+                    status_log_entry = f"{prog_name}\t{TestResults.SHOULD_HAVE_FAILED.name}\t{filename}"
                 elif filename.startswith("i_") and result == "PASS":
-                    status_log_entry = "%s\tIMPLEMENTATION_PASS\t%s" % (prog_name, filename)
+                    status_log_entry = f"{prog_name}\t{TestResults.IMPLEMENTATION_PASS.name}\t{filename}"
                 elif filename.startswith("i_") and result != "PASS":
-                    status_log_entry = "%s\tIMPLEMENTATION_FAIL\t%s" % (prog_name, filename)
+                    status_log_entry = f"{prog_name}\t{TestResults.IMPLEMENTATION_FAIL.name}\t{filename}"
 
                 if status_log_entry != None:
                     print(status_log_entry)
-                    log_file.write("%s\n" % status_log_entry)
+                    log_file.write(f"{status_log_entry}\n")
 
     FNULL.close()
     log_file.close()
@@ -172,12 +173,12 @@ def f_status_for_lib_for_file(json_dir, results_dir):
 
     # comment to ignore some tests
     statuses = [
-        "SHOULD_HAVE_FAILED",
-        "SHOULD_HAVE_PASSED",
-        "CRASH",
-        "IMPLEMENTATION_FAIL",
-        "IMPLEMENTATION_PASS",
-        "TIMEOUT",
+        TestResults.SHOULD_HAVE_FAILED.name,
+        TestResults.SHOULD_HAVE_PASSED.name,
+        TestResults.CRASH.name,
+        TestResults.IMPLEMENTATION_FAIL.name,
+        TestResults.IMPLEMENTATION_PASS.name,
+        TestResults.TIMEOUT.name,
     ]
 
     d = {}
@@ -216,12 +217,12 @@ def f_status_for_path_for_lib(json_dir, results_dir):
 
     # comment to ignore some tests
     statuses = [
-        "SHOULD_HAVE_FAILED",
-        "SHOULD_HAVE_PASSED",
-        "CRASH",
-        "IMPLEMENTATION_FAIL",
-        "IMPLEMENTATION_PASS",
-        "TIMEOUT",
+        TestResults.SHOULD_HAVE_FAILED.name,
+        TestResults.SHOULD_HAVE_PASSED.name,
+        TestResults.CRASH.name,
+        TestResults.IMPLEMENTATION_FAIL.name,
+        TestResults.IMPLEMENTATION_PASS.name,
+        TestResults.TIMEOUT.name,
     ]
 
     d = {}  # d['lib']['file'] = status
