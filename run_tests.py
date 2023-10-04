@@ -848,26 +848,31 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
         f.write("""
             <H4>Contents</H4>
             <OL>
-            <LI><A HREF="#color_scheme">Color Scheme</A>
-            <LI><A HREF="#all_results">Full Results</A>
-            <LI><A HREF="#results_by_parser">Results by Parser</A>
+                <LI><A HREF="#color_scheme">Color Scheme</A></LI>
+                <LI><A HREF="#all_results">Full Results</A></LI>
+                <LI>
+                    <A HREF="#results_by_parser">Results by Parser</A>
+                    <UL>
         """)
-        f.write("<UL>\n")
         for i, prog in enumerate(prog_names):
             f.write('    <LI><A HREF="#%d">%s</A>\n' % (i, prog))
-        f.write("</OL>\n")
+        f.write("""
+                    </UL>
+                </LI>
+            </OL>
+        """)
 
         f.write("""
             <A NAME="color_scheme"></A>
             <H4>1. Color scheme:</H4>
             <TABLE>
-                <TR><TD class="EXPECTED_RESULT">expected result</TD><TR>
-                <TR><TD class="SHOULD_HAVE_PASSED">parsing should have succeeded but failed</TD><TR>
-                <TR><TD class="SHOULD_HAVE_FAILED">parsing should have failed but succeeded</TD><TR>
-                <TR><TD class="IMPLEMENTATION_PASS">result undefined, parsing succeeded</TD><TR>
-                <TR><TD class="IMPLEMENTATION_FAIL">result undefined, parsing failed</TD><TR>
-                <TR><TD class="CRASH">parser crashed</TD><TR>
-                <TR><TD class="TIMEOUT">timeout</TD><TR>
+                <TR><TD class="EXPECTED_RESULT">expected result</TD></TR>
+                <TR><TD class="SHOULD_HAVE_PASSED">parsing should have succeeded but failed</TD></TR>
+                <TR><TD class="SHOULD_HAVE_FAILED">parsing should have failed but succeeded</TD></TR>
+                <TR><TD class="IMPLEMENTATION_PASS">result undefined, parsing succeeded</TD></TR>
+                <TR><TD class="IMPLEMENTATION_FAIL">result undefined, parsing failed</TD></TR>
+                <TR><TD class="CRASH">parser crashed</TD></TR>
+                <TR><TD class="TIMEOUT">timeout</TD></TR>
             </TABLE>
         """)
 
@@ -915,7 +920,6 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
         f.write("<H4>3. Results by Parser</H4>")
         for i, prog in enumerate(prog_names):
             url = programs[prog]["url"]
-            f.write("<P>\n")
             f.write('<A NAME="%d"></A>' % i)
             if len(url) > 0:
                 f.write('<H4><A HREF="%s">%s</A></H4>\n' % (url, prog))
@@ -958,7 +962,6 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
                 f.write("    </TR>")
 
             f.write("</TABLE>\n")
-            f.write("</P>\n")
 
         ###
 
