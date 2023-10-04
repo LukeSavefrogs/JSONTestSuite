@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import html
 import io
 import os
 import os.path
@@ -561,7 +562,13 @@ programs = {
 }
 
 
-def run_tests(restrict_to_path=None, restrict_to_program=None):
+def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
+    """ Run all tests.
+    
+    Args:
+        restrict_to_path (str): Restrict to a single file.
+        restrict_to_program (str): Restrict to a single program.
+    """
     FNULL = open(os.devnull, "w")
     log_file = open(LOG_FILE_PATH, "w")
 
@@ -577,9 +584,9 @@ def run_tests(restrict_to_path=None, restrict_to_program=None):
     for prog_name in prog_names:
         d = programs[prog_name]
 
-        url = d["url"]
-        commands = d["commands"]
-        setup = d.get("setup")
+        url = d.get("url", "")
+        commands = d.get("commands", [])
+        setup = d.get("setup", None)
         if setup != None:
             print("--", " ".join(setup))
             try:
@@ -665,31 +672,39 @@ def run_tests(restrict_to_path=None, restrict_to_program=None):
     log_file.close()
 
 
-def f_underline_non_printable_bytes(bytes):
-    html = ""
+def f_underline_non_printable_bytes(input_bytes: bytes) -> str:
+    """ Return an HTML string where non-printable bytes are underlined.
+    
+    Args:
+        input_bytes (bytes): Input bytes.
+        
+    Returns:
+        html_string(str): The resulting HTML string.
+    """
+    html_string = ""
 
     has_non_printable_characters = False
 
-    for b in bytes:
+    for b in input_bytes:
         is_not_printable = b < 0x20 or b > 0x7E
 
         has_non_printable_characters |= is_not_printable
 
         if is_not_printable:
-            html += "<U>%02X</U>" % b
+            html_string += f"<U>{html.escape('%02X' % b)}</U>"
         else:
-            html += "%c" % b
+            html_string += html.escape("%c" % b)
 
     if has_non_printable_characters:
         try:
-            html += " <=> %s" % bytes.decode("utf-8", errors="ignore")
+            html_string += html.escape(" <=> %s" % input_bytes.decode("utf-8", errors="ignore"))
         except:
             pass
 
-    if len(bytes) > 36:
-        return "%s(...)" % html[:36]
+    if len(input_bytes) > 36:
+        return html.escape("%s(...)" % html_string[:36])
 
-    return html
+    return html_string
 
 
 def f_status_for_lib_for_file(json_dir, results_dir):
