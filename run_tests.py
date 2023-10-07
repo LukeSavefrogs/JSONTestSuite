@@ -286,7 +286,13 @@ def f_tests_with_same_results(libs, status_for_lib_for_file):
     return r
 
 
-def generate_report(report_path, keep_only_first_result_in_set=False):
+def generate_report(report_path: str, keep_only_first_result_in_set: bool = False):
+    """ Generate an HTML report with the results of the tests.
+
+    Args:
+        report_path (str): Path to the report file.
+        keep_only_first_result_in_set (bool): Keep only the first result in a set of tests with the same result.
+    """
     (status_for_lib_for_file, libs) = f_status_for_lib_for_file(
         constants.TEST_CASES_DIR_PATH, constants.LOGS_DIR_PATH
     )
@@ -300,13 +306,13 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("""
             <!DOCTYPE html>
-            <HTML>
-                <HEAD>
-                    <TITLE>JSON Parsing Tests</TITLE>
-                    <LINK rel="stylesheet" type="text/css" href="style.css">
-                    <META charset="UTF-8">
-                </HEAD>
-                <BODY>
+            <html>
+                <head>
+                    <title>JSON Parsing Tests</title>
+                    <link rel="stylesheet" type="text/css" href="style.css">
+                    <meta charset="UTF-8">
+                </head>
+                <body>
         """)
 
         prog_names = list(programs.keys())
@@ -320,55 +326,55 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
             title += ", Pruned"
         else:
             title += ", Full"
-        f.write("<H1>%s</H1>\n" % title)
+        f.write("<h1>%s</h1>\n" % title)
         f.write(
-            '<P>Appendix to: seriot.ch <A HREF="http://www.seriot.ch/parsing_json.php">Parsing JSON is a Minefield</A> http://www.seriot.ch/parsing_json.php</P>\n'
+            '<p>Appendix to: seriot.ch <a href="http://www.seriot.ch/parsing_json.php">Parsing JSON is a Minefield</a> http://www.seriot.ch/parsing_json.php</p>\n'
         )
-        f.write("<PRE>%s</PRE>\n" % strftime("%Y-%m-%d %H:%M:%S"))
+        f.write("<pre>%s</pre>\n" % strftime("%Y-%m-%d %H:%M:%S"))
 
         f.write("""
-            <H4>Contents</H4>
-            <OL>
-                <LI><A HREF="#color_scheme">Color Scheme</A></LI>
-                <LI><A HREF="#all_results">Full Results</A></LI>
-                <LI>
-                    <A HREF="#results_by_parser">Results by Parser</A>
-                    <UL>
+            <h4>Contents</h4>
+            <ol>
+                <li><a href="#color_scheme">Color Scheme</a></li>
+                <li><a href="#all_results">Full Results</a></li>
+                <li>
+                    <a href="#results_by_parser">Results by Parser</a>
+                    <ul>
         """)
         for i, prog in enumerate(prog_names):
-            f.write('    <LI><A HREF="#%d">%s</A>\n' % (i, prog))
+            f.write('    <li><a href="#%d">%s</a>\n' % (i, prog))
         f.write("""
-                    </UL>
-                </LI>
-            </OL>
+                    </ul>
+                </li>
+            </ol>
         """)
 
         f.write("""
-            <A NAME="color_scheme"></A>
-            <H4>1. Color scheme:</H4>
-            <TABLE>
-                <TR><TD class="EXPECTED_RESULT">expected result</TD></TR>
-                <TR><TD class="SHOULD_HAVE_PASSED">parsing should have succeeded but failed</TD></TR>
-                <TR><TD class="SHOULD_HAVE_FAILED">parsing should have failed but succeeded</TD></TR>
-                <TR><TD class="IMPLEMENTATION_PASS">result undefined, parsing succeeded</TD></TR>
-                <TR><TD class="IMPLEMENTATION_FAIL">result undefined, parsing failed</TD></TR>
-                <TR><TD class="CRASH">parser crashed</TD></TR>
-                <TR><TD class="TIMEOUT">timeout</TD></TR>
-            </TABLE>
+            <a name="color_scheme"></a>
+            <h4>1. Color scheme:</h4>
+            <table>
+                <tr><td class="EXPECTED_RESULT">expected result</td></tr>
+                <tr><td class="SHOULD_HAVE_PASSED">parsing should have succeeded but failed</td></tr>
+                <tr><td class="SHOULD_HAVE_FAILED">parsing should have failed but succeeded</td></tr>
+                <tr><td class="IMPLEMENTATION_PASS">result undefined, parsing succeeded</td></tr>
+                <tr><td class="IMPLEMENTATION_FAIL">result undefined, parsing failed</td></tr>
+                <tr><td class="CRASH">parser crashed</td></tr>
+                <tr><td class="TIMEOUT">timeout</td></tr>
+            </table>
         """)
 
         ###
 
-        f.write('<A NAME="all_results"></A>\n')
-        f.write("<H4>2. Full Results</H4>\n")
-        f.write("<TABLE>\n")
+        f.write('<a name="all_results"></a>\n')
+        f.write("<h4>2. Full Results</h4>\n")
+        f.write("<table>\n")
 
-        f.write("    <TR>\n")
-        f.write("        <TH></TH>\n")
+        f.write("    <tr>\n")
+        f.write("        <th></th>\n")
         for lib in libs:
-            f.write('        <TH class="vertical"><DIV>%s</DIV></TH>\n' % lib)
-        f.write("        <TH></TH>\n")
-        f.write("    </TR>\n")
+            f.write('        <th class="vertical"><div>%s</div></th>\n' % lib)
+        f.write("        <th></th>\n")
+        f.write("    </tr>\n")
 
         for k, file_set in tests_with_same_results:
             ordered_file_set = list(file_set)
@@ -378,8 +384,8 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
                 ordered_file_set = [ordered_file_set[0]]
 
             for path in [path for path in ordered_file_set if os.path.exists(path)]:
-                f.write("    <TR>\n")
-                f.write("        <TD>%s</TD>" % os.path.basename(path))
+                f.write("    <tr>\n")
+                f.write("        <td>%s</td>" % os.path.basename(path))
 
                 status_for_lib = status_for_lib_for_file[path]
                 bytes = open(path, "rb").read()
@@ -387,25 +393,25 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
                 for lib in libs:
                     if lib in status_for_lib:
                         status = status_for_lib[lib]
-                        f.write('        <TD class="%s">%s</TD>' % (status, ""))
+                        f.write('        <td class="%s">%s</td>' % (status, ""))
                     else:
-                        f.write('        <TD class="EXPECTED_RESULT"></TD>')
-                f.write("        <TD>%s</TD>" % f_underline_non_printable_bytes(bytes))
-                f.write("    </TR>")
+                        f.write('        <td class="EXPECTED_RESULT"></td>')
+                f.write("        <td>%s</td>" % f_underline_non_printable_bytes(bytes))
+                f.write("    </tr>")
 
-        f.write("</TABLE>\n")
+        f.write("</table>\n")
 
         ###
 
-        f.write('<A NAME="results_by_parser"></A>\n')
-        f.write("<H4>3. Results by Parser</H4>")
+        f.write('<a name="results_by_parser"></a>\n')
+        f.write("<h4>3. Results by Parser</h4>")
         for i, prog in enumerate(prog_names):
             url = programs[prog]["url"]
-            f.write('<A NAME="%d"></A>' % i)
+            f.write('<a name="%d"></a>' % i)
             if len(url) > 0:
-                f.write('<H4><A HREF="%s">%s</A></H4>\n' % (url, prog))
+                f.write('<h4><a href="%s">%s</a></h4>\n' % (url, prog))
             else:
-                f.write("<H4>%s</H4>\n" % prog)
+                f.write("<h4>%s</h4>\n" % prog)
 
             ###
 
@@ -416,17 +422,17 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
             paths = list(status_for_path.keys())
             paths.sort()
 
-            f.write("<TABLE>\n")
+            f.write("<table>\n")
 
-            f.write("    <TR>\n")
-            f.write("        <TH></TH>\n")
-            f.write('        <TH class="space"><DIV></DIV></TH>\n')
-            f.write("        <TH></TH>\n")
-            f.write("    </TR>\n")
+            f.write("    <tr>\n")
+            f.write("        <th></th>\n")
+            f.write('        <th class="space"><div></div></th>\n')
+            f.write("        <th></th>\n")
+            f.write("    </tr>\n")
 
             for path in paths:
-                f.write("    <TR>\n")
-                f.write("        <TD>%s</TD>" % os.path.basename(path))
+                f.write("    <tr>\n")
+                f.write("        <td>%s</td>" % os.path.basename(path))
 
                 status_for_lib = status_for_lib_for_file[path]
                 if os.path.exists(path):
@@ -436,19 +442,19 @@ def generate_report(report_path, keep_only_first_result_in_set=False):
 
                 if prog in status_for_lib:
                     status = status_for_lib[prog]
-                    f.write('        <TD class="%s">%s</TD>' % (status, ""))
+                    f.write('        <td class="%s">%s</td>' % (status, ""))
                 else:
-                    f.write("        <TD></TD>")
-                f.write("        <TD>%s</TD>" % f_underline_non_printable_bytes(bytes))
-                f.write("    </TR>")
+                    f.write("        <td></td>")
+                f.write("        <td>%s</td>" % f_underline_non_printable_bytes(bytes))
+                f.write("    </tr>")
 
-            f.write("</TABLE>\n")
+            f.write("</table>\n")
 
         ###
 
         f.write("""
-            </BODY>
-            </HTML>
+            </body>
+            </html>
         """)
     if os.path.exists("/usr/bin/open"):
         os.system('/usr/bin/open "%s"' % report_path)
@@ -481,6 +487,7 @@ if __name__ == "__main__":
 
     # args.restrict_to_program = ["C ConcreteServer"]
 
+    # Run tests and generate the log file
     run_tests(args.restrict_to_path, args.restrict_to_program)
 
     generate_report(
