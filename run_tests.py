@@ -16,11 +16,14 @@ from JSONTestSuite.programs import programs
 from JSONTestSuite.results import TestResults
 
 def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
-    """ Run all tests.
+    r""" Run all tests.
+
+    Generates a log file with the results of each test in the following format:
+    `<program_name>\t<test_result>\t<test_file>` (tab-separated).
     
     Args:
         restrict_to_path (str): Restrict to a single file.
-        restrict_to_program (str): Restrict to a single program.
+        restrict_to_program (str): Restrict to a single program in the `programs` dictionary.
     """
     FNULL = open(os.devnull, "w")
     log_file = open(constants.LOG_FILE_PATH, "w")
@@ -79,6 +82,7 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                 print("--", " ".join(process_args))
 
                 try:
+                    test_result = None
                     status = subprocess.call(
                         process_args,
                         stdin=my_stdin,
@@ -86,12 +90,9 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                         stderr=subprocess.STDOUT,
                         timeout=5,
                     )
-                    # print("-->", status)
                 except subprocess.TimeoutExpired:
                     print("timeout expired")
-                    status_log_entry = f"{prog_name}\t{TestResults.TIMEOUT.name}\t{filename}"
-                    log_file.write(f"{status_log_entry}\n")
-                    print("RESULT:", result)
+                    test_result = "TIMEOUT"
                     continue
                 except FileNotFoundError as e:
                     print("-- skip non-existing", e.filename)
@@ -105,24 +106,25 @@ def run_tests(restrict_to_path=None, restrict_to_program=None) -> None:
                 if use_stdin:
                     my_stdin.close()
 
-                result = None
                 if status == 0:
-                    result = "PASS"
+                    test_result = "PASS"
                 elif status == 1:
-                    result == "FAIL"
-                else:
-                    result = "CRASH"
+                    test_result == "FAIL"
+                elif test_result is None: # Only set if not set by timeout
+                    test_result = "CRASH"
 
                 status_log_entry = None
-                if result == "CRASH":
+                if test_result == "CRASH":
                     status_log_entry = f"{prog_name}\t{TestResults.CRASH.name}\t{filename}"
-                elif filename.startswith("y_") and result != "PASS":
+                elif test_result == "TIMEOUT":
+                    status_log_entry = f"{prog_name}\t{TestResults.TIMEOUT.name}\t{filename}"
+                elif filename.startswith("y_") and test_result != "PASS":
                     status_log_entry = f"{prog_name}\t{TestResults.SHOULD_HAVE_PASSED.name}\t{filename}"
-                elif filename.startswith("n_") and result == "PASS":
+                elif filename.startswith("n_") and test_result == "PASS":
                     status_log_entry = f"{prog_name}\t{TestResults.SHOULD_HAVE_FAILED.name}\t{filename}"
-                elif filename.startswith("i_") and result == "PASS":
+                elif filename.startswith("i_") and test_result == "PASS":
                     status_log_entry = f"{prog_name}\t{TestResults.IMPLEMENTATION_PASS.name}\t{filename}"
-                elif filename.startswith("i_") and result != "PASS":
+                elif filename.startswith("i_") and test_result != "PASS":
                     status_log_entry = f"{prog_name}\t{TestResults.IMPLEMENTATION_FAIL.name}\t{filename}"
 
                 if status_log_entry != None:
@@ -168,11 +170,13 @@ def f_underline_non_printable_bytes(input_bytes: bytes) -> str:
     return html_string
 
 
-def f_status_for_lib_for_file(json_dir, results_dir):
+def f_status_for_lib_for_file(json_dir: str, results_dir: str) -> tuple[dict[str, dict[str, str]], list]:
+    
+    # Find all result files (`./results/*.txt`)
     txt_filenames = [f for f in listdir(results_dir) if f.endswith(".txt")]
 
     # comment to ignore some tests
-    statuses = [
+    accepted_statuses = [
         TestResults.SHOULD_HAVE_FAILED.name,
         TestResults.SHOULD_HAVE_PASSED.name,
         TestResults.CRASH.name,
@@ -181,42 +185,43 @@ def f_status_for_lib_for_file(json_dir, results_dir):
         TestResults.TIMEOUT.name,
     ]
 
-    d = {}
+    test_results= {}
     libs = []
 
     for filename in txt_filenames:
         path = os.path.join(results_dir, filename)
 
-        with open(path) as f:
-            for l in f:
-                comps = l.split("\t")
-                if len(comps) != 3:
-                    print("***", comps)
+        with open(path) as file:
+            for l in file:
+                columns = l.split("\t")
+                if len(columns) != 3:
+                    print("***", columns)
                     continue
 
-                if comps[1] not in statuses:
-                    print("-- unhandled status:", comps[1])
+                if columns[1] not in accepted_statuses:
+                    print("-- unhandled status:", columns[1])
+                    continue
 
-                (lib, status, json_filename) = (comps[0], comps[1], comps[2].rstrip())
+                (lib, status, json_filename) = (columns[0], columns[1], columns[2].rstrip())
 
                 if lib not in libs:
                     libs.append(lib)
 
                 json_path = os.path.join(constants.TEST_CASES_DIR_PATH, json_filename)
 
-                if json_path not in d:
-                    d[json_path] = {}
+                if json_path not in test_results:
+                    test_results[json_path] = {}
 
-                d[json_path][lib] = status
+                test_results[json_path][lib] = status
 
-    return d, libs
+    return test_results, libs
 
 
 def f_status_for_path_for_lib(json_dir, results_dir):
     txt_filenames = [f for f in listdir(results_dir) if f.endswith(".txt")]
 
     # comment to ignore some tests
-    statuses = [
+    accepted_statuses = [
         TestResults.SHOULD_HAVE_FAILED.name,
         TestResults.SHOULD_HAVE_PASSED.name,
         TestResults.CRASH.name,
@@ -232,15 +237,15 @@ def f_status_for_path_for_lib(json_dir, results_dir):
 
         with open(path) as f:
             for l in f:
-                comps = l.split("\t")
-                if len(comps) != 3:
+                columns = l.split("\t")
+                if len(columns) != 3:
                     continue
 
-                if comps[1] not in statuses:
-                    # print "-- unhandled status:", comps[1]
+                if columns[1] not in accepted_statuses:
+                    # print "-- unhandled status:", columns[1]
                     continue
 
-                (lib, status, json_filename) = (comps[0], comps[1], comps[2].rstrip())
+                (lib, status, json_filename) = (columns[0], columns[1], columns[2].rstrip())
 
                 if lib not in d:
                     d[lib] = {}
